@@ -8,66 +8,70 @@ window.addEventListener('DOMContentLoaded', function() {
     let frameCount = 0;
     let fps = 0;
     
-    // Initialize Chart.js
+    // Initialize Chart.js only if available
     const chartCanvas = document.getElementById('performance-chart');
     if (!chartCanvas) {
         console.error('Performance chart canvas not found');
         return;
     }
     
-    const ctx = chartCanvas.getContext('2d');
+    let performanceChart = null;
     
-    // Create performance chart
-    const performanceChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: Array(maxDataPoints).fill(''),
-            datasets: [{
-                label: 'FPS',
-                data: fpsData,
-                borderColor: '#44aaff',
-                backgroundColor: 'rgba(68, 170, 255, 0.1)',
-                borderWidth: 2,
-                tension: 0.4,
-                fill: true,
-                pointRadius: 0
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            animation: false,
-            scales: {
-                x: {
-                    display: false
-                },
-                y: {
-                    beginAtZero: true,
-                    max: 60,
-                    ticks: {
-                        color: '#fff',
-                        font: {
-                            size: 10
-                        }
-                    },
-                    grid: {
-                        color: 'rgba(255, 255, 255, 0.1)'
-                    }
-                }
+    if (typeof Chart !== 'undefined') {
+        const ctx = chartCanvas.getContext('2d');
+        
+        // Create performance chart
+        performanceChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: Array(maxDataPoints).fill(''),
+                datasets: [{
+                    label: 'FPS',
+                    data: fpsData,
+                    borderColor: '#44aaff',
+                    backgroundColor: 'rgba(68, 170, 255, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.4,
+                    fill: true,
+                    pointRadius: 0
+                }]
             },
-            plugins: {
-                legend: {
-                    display: true,
-                    labels: {
-                        color: '#fff',
-                        font: {
-                            size: 11
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: false,
+                scales: {
+                    x: {
+                        display: false
+                    },
+                    y: {
+                        beginAtZero: true,
+                        max: 60,
+                        ticks: {
+                            color: '#fff',
+                            font: {
+                                size: 10
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        labels: {
+                            color: '#fff',
+                            font: {
+                                size: 11
+                            }
                         }
                     }
                 }
             }
-        }
-    });
+        });
+    }
     
     // Update FPS tracking
     function updateFPS() {
@@ -80,12 +84,14 @@ window.addEventListener('DOMContentLoaded', function() {
             frameCount = 0;
             lastFrameTime = currentTime;
             
-            // Update chart data
-            fpsData.push(fps);
-            if (fpsData.length > maxDataPoints) {
-                fpsData.shift();
+            if (performanceChart) {
+                // Update chart data
+                fpsData.push(fps);
+                if (fpsData.length > maxDataPoints) {
+                    fpsData.shift();
+                }
+                performanceChart.update('none');
             }
-            performanceChart.update('none');
         }
         
         requestAnimationFrame(updateFPS);
