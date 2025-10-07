@@ -10,23 +10,21 @@ window.addEventListener('DOMContentLoaded', function() {
     
     // Initialize Chart.js
     const chartCanvas = document.getElementById('performance-chart');
-    if (!chartCanvas) {
-        console.error('Performance chart canvas not found');
-        return;
-    }
+    let performanceChart = null;
     
-    const ctx = chartCanvas.getContext('2d');
-    
-    // Create performance chart
-    const performanceChart = new Chart(ctx, {
+    if (chartCanvas && typeof Chart !== 'undefined') {
+        const ctx = chartCanvas.getContext('2d');
+        
+        // Create performance chart
+        performanceChart = new Chart(ctx, {
         type: 'line',
         data: {
             labels: Array(maxDataPoints).fill(''),
             datasets: [{
                 label: 'FPS',
                 data: fpsData,
-                borderColor: '#44aaff',
-                backgroundColor: 'rgba(68, 170, 255, 0.1)',
+                borderColor: '#667eea',
+                backgroundColor: 'rgba(102, 126, 234, 0.1)',
                 borderWidth: 2,
                 tension: 0.4,
                 fill: true,
@@ -45,13 +43,14 @@ window.addEventListener('DOMContentLoaded', function() {
                     beginAtZero: true,
                     max: 60,
                     ticks: {
-                        color: '#fff',
+                        color: 'rgba(255, 255, 255, 0.7)',
                         font: {
-                            size: 10
+                            size: 10,
+                            family: 'Inter'
                         }
                     },
                     grid: {
-                        color: 'rgba(255, 255, 255, 0.1)'
+                        color: 'rgba(255, 255, 255, 0.05)'
                     }
                 }
             },
@@ -59,15 +58,20 @@ window.addEventListener('DOMContentLoaded', function() {
                 legend: {
                     display: true,
                     labels: {
-                        color: '#fff',
+                        color: 'rgba(255, 255, 255, 0.9)',
                         font: {
-                            size: 11
+                            size: 11,
+                            family: 'Inter',
+                            weight: '500'
                         }
                     }
                 }
             }
         }
-    });
+        });
+    } else {
+        console.warn('Chart.js not loaded, performance chart disabled');
+    }
     
     // Update FPS tracking
     function updateFPS() {
@@ -85,7 +89,9 @@ window.addEventListener('DOMContentLoaded', function() {
             if (fpsData.length > maxDataPoints) {
                 fpsData.shift();
             }
-            performanceChart.update('none');
+            if (performanceChart) {
+                performanceChart.update('none');
+            }
         }
         
         requestAnimationFrame(updateFPS);
@@ -150,6 +156,97 @@ window.addEventListener('DOMContentLoaded', function() {
         // Initialize display value
         value.textContent = slider.value;
     });
+    
+    // Sidebar toggle functionality
+    const sidebar = document.getElementById('controls-sidebar');
+    const sidebarToggle = document.getElementById('sidebar-toggle');
+    
+    if (sidebar && sidebarToggle) {
+        sidebarToggle.addEventListener('click', function() {
+            sidebar.classList.toggle('open');
+            this.textContent = sidebar.classList.contains('open') ? '✕' : '⚙️';
+        });
+        
+        // Close sidebar when clicking outside on desktop
+        document.addEventListener('click', function(e) {
+            if (window.innerWidth > 768 && 
+                sidebar.classList.contains('open') && 
+                !sidebar.contains(e.target) && 
+                !sidebarToggle.contains(e.target)) {
+                sidebar.classList.remove('open');
+                sidebarToggle.textContent = '⚙️';
+            }
+        });
+    }
+    
+    // Music control functionality
+    const musicControl = document.getElementById('music-control');
+    const zenMusic = document.getElementById('zen-music');
+    let isMusicPlaying = false;
+    
+    if (musicControl && zenMusic) {
+        musicControl.addEventListener('click', function() {
+            if (isMusicPlaying) {
+                zenMusic.pause();
+                this.textContent = '🎵';
+                this.classList.remove('playing');
+            } else {
+                zenMusic.play().catch(err => {
+                    console.warn('Music autoplay was prevented:', err);
+                });
+                this.textContent = '🔇';
+                this.classList.add('playing');
+            }
+            isMusicPlaying = !isMusicPlaying;
+        });
+        
+        // Auto-play music on user interaction (required by browsers)
+        const startMusic = function() {
+            if (!isMusicPlaying) {
+                zenMusic.play().then(() => {
+                    isMusicPlaying = true;
+                    musicControl.textContent = '🔇';
+                    musicControl.classList.add('playing');
+                }).catch(err => {
+                    console.warn('Music autoplay was prevented:', err);
+                });
+            }
+            // Remove listeners after first interaction
+            document.removeEventListener('click', startMusic);
+            document.removeEventListener('touchstart', startMusic);
+        };
+        
+        // Try to start music on first user interaction
+        document.addEventListener('click', startMusic);
+        document.addEventListener('touchstart', startMusic);
+    }
+    
+    // Header button functionality
+    const randomizeBtn = document.getElementById('randomize-btn');
+    const clearBtn = document.getElementById('clear-btn');
+    
+    if (randomizeBtn) {
+        randomizeBtn.addEventListener('click', function() {
+            // Trigger random splats (if splatStack exists in global scope)
+            if (typeof splatStack !== 'undefined') {
+                splatStack.push(parseInt(Math.random() * 20) + 5);
+            }
+        });
+    }
+    
+    if (clearBtn) {
+        clearBtn.addEventListener('click', function() {
+            // Clear the simulation (if config exists in global scope)
+            if (typeof config !== 'undefined') {
+                // Toggle PAUSED to trigger a reset-like behavior
+                const wasPaused = config.PAUSED;
+                config.PAUSED = true;
+                setTimeout(() => {
+                    config.PAUSED = wasPaused;
+                }, 100);
+            }
+        });
+    }
     
     console.log('Controls initialized successfully');
 });
