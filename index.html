@@ -12,15 +12,55 @@
     
     <script src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.9/build/dat.gui.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
         * {
             user-select: none;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+        
         html, body {
             overflow: hidden;
-            background-color: #000;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         }
+        
         body {
             margin: 0;
             position: fixed;
@@ -28,90 +68,316 @@
             height: 100%;
             display: flex;
             flex-direction: column;
+            animation: fadeIn 0.6s ease-out;
         }
+        
         #simulation-container {
             flex: 1;
             position: relative;
             overflow: hidden;
         }
+        
         canvas#fluid-canvas {
             width: 100%;
             height: 100%;
             display: block;
         }
+        
         .dg {
-            opacity: 0.9;
+            opacity: 0;
+            pointer-events: none;
         }
-        .dg .property-name {
-            overflow: visible;
-        }
-        #controls-container {
-            background: rgba(0, 0, 0, 0.85);
-            padding: 15px 20px;
-            border-top: 1px solid #333;
+        
+        /* Modern Header Bar */
+        #header-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: rgba(20, 20, 30, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             display: flex;
-            flex-direction: column;
-            gap: 15px;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 30px;
+            z-index: 100;
+            animation: slideIn 0.5s ease-out;
         }
+        
+        #header-bar h1 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #fff;
+            letter-spacing: -0.5px;
+            margin: 0;
+        }
+        
+        #header-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .control-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 8px 16px;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+        }
+        
+        .control-btn:active {
+            transform: translateY(0);
+        }
+        
+        .control-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: transparent;
+        }
+        
+        /* Sidebar Toggle */
+        #sidebar-toggle {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 50%;
+            color: #fff;
+            font-size: 24px;
+            cursor: pointer;
+            z-index: 1000;
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: fadeIn 0.8s ease-out 0.3s both;
+        }
+        
+        #sidebar-toggle:hover {
+            transform: scale(1.1);
+            box-shadow: 0 12px 32px rgba(102, 126, 234, 0.6);
+        }
+        
+        #sidebar-toggle:active {
+            transform: scale(0.95);
+        }
+        
+        /* Modern Sidebar */
+        #controls-sidebar {
+            position: fixed;
+            right: -400px;
+            top: 0;
+            width: 380px;
+            height: 100%;
+            background: rgba(20, 20, 30, 0.95);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: -10px 0 50px rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow-y: auto;
+            padding: 80px 30px 30px;
+        }
+        
+        #controls-sidebar.open {
+            right: 0;
+        }
+        
+        #controls-sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        #controls-sidebar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        
+        #controls-sidebar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+        }
+        
+        #controls-sidebar::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .sidebar-section {
+            margin-bottom: 30px;
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+        }
+        
         #chart-container {
             height: 120px;
-            background: rgba(20, 20, 20, 0.9);
-            padding: 10px;
-            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 30px;
+            transition: all 0.3s ease;
         }
-        #sliders-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
+        
+        #chart-container:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
         }
+        
         .slider-group {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
+            margin-bottom: 25px;
+            animation: slideIn 0.5s ease-out;
         }
+        
         .slider-group label {
             color: #fff;
-            font-size: 12px;
-            font-family: 'Lucida Grande', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            margin-bottom: 10px;
         }
+        
         .slider-group label .value {
-            color: #4af;
-            font-weight: bold;
+            color: #667eea;
+            font-weight: 600;
+            background: rgba(102, 126, 234, 0.1);
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 13px;
         }
+        
         .slider-group input[type="range"] {
             width: 100%;
             height: 6px;
             border-radius: 3px;
-            background: #333;
+            background: rgba(255, 255, 255, 0.1);
             outline: none;
             -webkit-appearance: none;
+            transition: all 0.3s ease;
         }
+        
+        .slider-group input[type="range"]:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+        
         .slider-group input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
-            width: 16px;
-            height: 16px;
+            width: 18px;
+            height: 18px;
             border-radius: 50%;
-            background: #4af;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             cursor: pointer;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
+        
+        .slider-group input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.6);
+        }
+        
         .slider-group input[type="range"]::-moz-range-thumb {
-            width: 16px;
-            height: 16px;
+            width: 18px;
+            height: 18px;
             border-radius: 50%;
-            background: #4af;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             cursor: pointer;
             border: none;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
+        
+        .slider-group input[type="range"]::-moz-range-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.6);
+        }
+        
+        /* Music Control */
+        #music-control {
+            position: fixed;
+            left: 20px;
+            bottom: 20px;
+            width: 56px;
+            height: 56px;
+            background: rgba(20, 20, 30, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            color: #fff;
+            font-size: 20px;
+            cursor: pointer;
+            z-index: 1000;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.8s ease-out 0.4s both;
+        }
+        
+        #music-control:hover {
+            transform: scale(1.1);
+            border-color: rgba(255, 255, 255, 0.3);
+            background: rgba(20, 20, 30, 0.9);
+        }
+        
+        #music-control.playing {
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
         @media (max-width: 768px) {
-            #controls-container {
-                padding: 10px;
+            #header-bar {
+                padding: 0 15px;
+                height: 50px;
             }
-            #sliders-container {
-                grid-template-columns: 1fr;
+            
+            #header-bar h1 {
+                font-size: 16px;
+            }
+            
+            #controls-sidebar {
+                width: 100%;
+                right: -100%;
+                padding: 70px 20px 20px;
+            }
+            
+            #sidebar-toggle {
+                right: 15px;
+                bottom: 15px;
+                width: 48px;
+                height: 48px;
+            }
+            
+            #music-control {
+                left: 15px;
+                bottom: 15px;
+                width: 48px;
+                height: 48px;
             }
         }
     </style>
@@ -123,14 +389,31 @@
     <script async src='https://www.google-analytics.com/analytics.js'></script>    
 </head>
 <body>
+    <!-- Header Bar -->
+    <div id="header-bar">
+        <h1>✨ Fluid Simulation</h1>
+        <div id="header-controls">
+            <button class="control-btn" id="randomize-btn">🎲 Random</button>
+            <button class="control-btn" id="clear-btn">🗑️ Clear</button>
+        </div>
+    </div>
+    
+    <!-- Main Simulation Container -->
     <div id="simulation-container">
         <canvas id="fluid-canvas"></canvas>
     </div>
-    <div id="controls-container">
-        <div id="chart-container">
-            <canvas id="performance-chart"></canvas>
+    
+    <!-- Collapsible Sidebar -->
+    <div id="controls-sidebar">
+        <div class="sidebar-section">
+            <div class="section-title">Performance</div>
+            <div id="chart-container">
+                <canvas id="performance-chart"></canvas>
+            </div>
         </div>
-        <div id="sliders-container">
+        
+        <div class="sidebar-section">
+            <div class="section-title">Physics</div>
             <div class="slider-group">
                 <label>Viscosity <span class="value" id="viscosity-value">0.2</span></label>
                 <input type="range" id="viscosity-slider" min="0" max="4" step="0.1" value="0.2">
@@ -144,6 +427,14 @@
                 <input type="range" id="vorticity-slider" min="0" max="50" step="1" value="30">
             </div>
             <div class="slider-group">
+                <label>Pressure <span class="value" id="pressure-value">0.8</span></label>
+                <input type="range" id="pressure-slider" min="0" max="1" step="0.05" value="0.8">
+            </div>
+        </div>
+        
+        <div class="sidebar-section">
+            <div class="section-title">Visual Effects</div>
+            <div class="slider-group">
                 <label>Splat Radius <span class="value" id="splat-radius-value">0.25</span></label>
                 <input type="range" id="splat-radius-slider" min="0.01" max="1" step="0.01" value="0.25">
             </div>
@@ -151,12 +442,20 @@
                 <label>Bloom Intensity <span class="value" id="bloom-intensity-value">0.8</span></label>
                 <input type="range" id="bloom-intensity-slider" min="0.1" max="2" step="0.1" value="0.8">
             </div>
-            <div class="slider-group">
-                <label>Pressure <span class="value" id="pressure-value">0.8</span></label>
-                <input type="range" id="pressure-slider" min="0" max="1" step="0.05" value="0.8">
-            </div>
         </div>
     </div>
+    
+    <!-- Sidebar Toggle Button -->
+    <button id="sidebar-toggle">⚙️</button>
+    
+    <!-- Music Control Button -->
+    <button id="music-control" title="Toggle Music">🎵</button>
+    
+    <!-- Hidden Audio Element -->
+    <audio id="zen-music" loop>
+        <source src="https://cdn.pixabay.com/audio/2022/03/10/audio_4e156d8542.mp3" type="audio/mpeg">
+    </audio>
+    
     <script src="./script.js"></script>
     <script src="./controls.js"></script>
 </body>
