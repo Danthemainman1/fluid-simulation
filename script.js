@@ -86,7 +86,8 @@ if (!ext.supportLinearFiltering) {
     config.SUNRAYS = false;
 }
 
-startGUI();
+// Old dat.GUI removed - using new minimal UI in HTML
+// startGUI();
 
 function getWebGLContext (canvas) {
     const params = { alpha: true, depth: false, stencil: false, antialias: false, preserveDrawingBuffer: false };
@@ -181,6 +182,7 @@ function supportRenderTextureFormat (gl, internalFormat, format, type) {
     return status == gl.FRAMEBUFFER_COMPLETE;
 }
 
+/* OLD DAT.GUI UI - REMOVED
 function startGUI () {
     var gui = new dat.GUI({ width: 300 });
     gui.add(config, 'DYE_RESOLUTION', { 'high': 1024, 'medium': 512, 'low': 256, 'very low': 128 }).name('quality').onFinishChange(initFramebuffers);
@@ -255,6 +257,7 @@ function startGUI () {
     if (isMobile())
         gui.close();
 }
+END OF OLD DAT.GUI UI */
 
 function isMobile () {
     return /Mobi|Android/i.test(navigator.userAgent);
