@@ -1,163 +1,425 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="utf-8">
-    <meta http-equiv="Cache-Control" content="no-cache">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="mobile-web-app-capable" content="yes">
-    <title>WebGL Fluid Simulation</title>
-    <meta name="description" content="A WebGL fluid simulation that works in mobile browsers.">
-    
-    <script src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.9/build/dat.gui.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <title>Fluid Simulation</title>
+    <meta name="description" content="WebGL fluid simulation with interactive controls">
     
     <style>
         * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
             user-select: none;
         }
-        html, body {
-            overflow: hidden;
-            background-color: #000;
-        }
+        
         body {
-            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: #fff;
+            overflow: hidden;
             position: fixed;
             width: 100%;
             height: 100%;
-            display: flex;
-            flex-direction: column;
         }
-        #simulation-container {
-            flex: 1;
-            position: relative;
-            overflow: hidden;
-        }
-        canvas#fluid-canvas {
+        
+        #fluid-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
             display: block;
         }
-        .dg {
-            opacity: 0.9;
+        
+        /* Control Panel */
+        #control-panel {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(20, 20, 25, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 20px;
+            width: 280px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 1000;
+            transition: transform 0.3s ease;
         }
-        .dg .property-name {
-            overflow: visible;
+        
+        #control-panel.hidden {
+            transform: translateX(320px);
         }
-        #controls-container {
-            background: rgba(0, 0, 0, 0.85);
-            padding: 15px 20px;
-            border-top: 1px solid #333;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-        #chart-container {
-            height: 120px;
-            background: rgba(20, 20, 20, 0.9);
-            padding: 10px;
-            border-radius: 5px;
-        }
-        #sliders-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-        }
-        .slider-group {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-        .slider-group label {
+        
+        #control-panel h1 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
             color: #fff;
-            font-size: 12px;
-            font-family: 'Lucida Grande', sans-serif;
+            letter-spacing: 0.5px;
+        }
+        
+        .control-group {
+            margin-bottom: 18px;
+        }
+        
+        .control-group label {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            font-size: 13px;
+            color: #aaa;
+            margin-bottom: 8px;
         }
-        .slider-group label .value {
-            color: #4af;
-            font-weight: bold;
+        
+        .control-group label span {
+            color: #00d4ff;
+            font-weight: 600;
+            font-size: 13px;
         }
-        .slider-group input[type="range"] {
+        
+        input[type="range"] {
             width: 100%;
-            height: 6px;
-            border-radius: 3px;
-            background: #333;
+            height: 4px;
+            border-radius: 2px;
+            background: linear-gradient(to right, #00d4ff 0%, #333 0%);
             outline: none;
             -webkit-appearance: none;
+            cursor: pointer;
         }
-        .slider-group input[type="range"]::-webkit-slider-thumb {
+        
+        input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
-            width: 16px;
-            height: 16px;
+            width: 14px;
+            height: 14px;
             border-radius: 50%;
-            background: #4af;
+            background: #00d4ff;
             cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 212, 255, 0.5);
         }
-        .slider-group input[type="range"]::-moz-range-thumb {
-            width: 16px;
-            height: 16px;
+        
+        input[type="range"]::-moz-range-thumb {
+            width: 14px;
+            height: 14px;
             border-radius: 50%;
-            background: #4af;
+            background: #00d4ff;
             cursor: pointer;
             border: none;
+            box-shadow: 0 2px 8px rgba(0, 212, 255, 0.5);
         }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .checkbox-group input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #00d4ff;
+        }
+        
+        .checkbox-group label {
+            font-size: 13px;
+            color: #aaa;
+            cursor: pointer;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 8px;
+            margin-top: 20px;
+        }
+        
+        button {
+            flex: 1;
+            padding: 10px;
+            background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 212, 255, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        button.secondary {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        button.secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Toggle Button */
+        #toggle-panel {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 48px;
+            height: 48px;
+            background: rgba(20, 20, 25, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+            transition: all 0.2s;
+        }
+        
+        #toggle-panel.show {
+            display: flex;
+        }
+        
+        #toggle-panel:hover {
+            background: rgba(30, 30, 35, 0.95);
+        }
+        
+        #toggle-panel svg {
+            width: 24px;
+            height: 24px;
+            fill: #00d4ff;
+        }
+        
+        /* Info Text */
+        #info {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 12px;
+            z-index: 1000;
+        }
+        
         @media (max-width: 768px) {
-            #controls-container {
-                padding: 10px;
+            #control-panel {
+                top: auto;
+                bottom: 0;
+                right: 0;
+                left: 0;
+                width: 100%;
+                border-radius: 20px 20px 0 0;
+                max-height: 70vh;
+                overflow-y: auto;
             }
-            #sliders-container {
-                grid-template-columns: 1fr;
+            
+            #control-panel.hidden {
+                transform: translateY(100%);
+            }
+            
+            #toggle-panel {
+                top: auto;
+                bottom: 20px;
+                right: 20px;
+            }
+            
+            #info {
+                display: none;
             }
         }
     </style>
-    <script>
-        window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
-        ga('create', 'UA-105392568-1', 'auto');
-        ga('send', 'pageview');
-    </script>
-    <script async src='https://www.google-analytics.com/analytics.js'></script>    
 </head>
 <body>
-    <div id="simulation-container">
-        <canvas id="fluid-canvas"></canvas>
-    </div>
-    <div id="controls-container">
-        <div id="chart-container">
-            <canvas id="performance-chart"></canvas>
+    <canvas id="fluid-canvas"></canvas>
+    
+    <div id="control-panel">
+        <h1>Fluid Controls</h1>
+        
+        <div class="control-group">
+            <label>
+                Viscosity
+                <span id="viscosity-value">0.2</span>
+            </label>
+            <input type="range" id="viscosity" min="0" max="4" step="0.1" value="0.2">
         </div>
-        <div id="sliders-container">
-            <div class="slider-group">
-                <label>Viscosity <span class="value" id="viscosity-value">0.2</span></label>
-                <input type="range" id="viscosity-slider" min="0" max="4" step="0.1" value="0.2">
-            </div>
-            <div class="slider-group">
-                <label>Density Diffusion <span class="value" id="density-value">1</span></label>
-                <input type="range" id="density-slider" min="0" max="4" step="0.1" value="1">
-            </div>
-            <div class="slider-group">
-                <label>Vorticity <span class="value" id="vorticity-value">30</span></label>
-                <input type="range" id="vorticity-slider" min="0" max="50" step="1" value="30">
-            </div>
-            <div class="slider-group">
-                <label>Splat Radius <span class="value" id="splat-radius-value">0.25</span></label>
-                <input type="range" id="splat-radius-slider" min="0.01" max="1" step="0.01" value="0.25">
-            </div>
-            <div class="slider-group">
-                <label>Bloom Intensity <span class="value" id="bloom-intensity-value">0.8</span></label>
-                <input type="range" id="bloom-intensity-slider" min="0.1" max="2" step="0.1" value="0.8">
-            </div>
-            <div class="slider-group">
-                <label>Pressure <span class="value" id="pressure-value">0.8</span></label>
-                <input type="range" id="pressure-slider" min="0" max="1" step="0.05" value="0.8">
-            </div>
+        
+        <div class="control-group">
+            <label>
+                Density
+                <span id="density-value">1.0</span>
+            </label>
+            <input type="range" id="density" min="0" max="4" step="0.1" value="1">
+        </div>
+        
+        <div class="control-group">
+            <label>
+                Vorticity
+                <span id="vorticity-value">30</span>
+            </label>
+            <input type="range" id="vorticity" min="0" max="50" step="1" value="30">
+        </div>
+        
+        <div class="control-group">
+            <label>
+                Pressure
+                <span id="pressure-value">0.8</span>
+            </label>
+            <input type="range" id="pressure" min="0" max="1" step="0.05" value="0.8">
+        </div>
+        
+        <div class="control-group">
+            <label>
+                Splat Radius
+                <span id="radius-value">0.25</span>
+            </label>
+            <input type="range" id="radius" min="0.01" max="1" step="0.01" value="0.25">
+        </div>
+        
+        <div class="control-group">
+            <label>
+                Bloom
+                <span id="bloom-value">0.8</span>
+            </label>
+            <input type="range" id="bloom" min="0.1" max="2" step="0.1" value="0.8">
+        </div>
+        
+        <div class="checkbox-group">
+            <input type="checkbox" id="shading" checked>
+            <label for="shading">Shading</label>
+        </div>
+        
+        <div class="checkbox-group">
+            <input type="checkbox" id="colorful" checked>
+            <label for="colorful">Colorful</label>
+        </div>
+        
+        <div class="button-group">
+            <button id="random-splats">Random Splats</button>
+            <button id="clear" class="secondary">Clear</button>
         </div>
     </div>
+    
+    <button id="toggle-panel">
+        <svg viewBox="0 0 24 24">
+            <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
+        </svg>
+    </button>
+    
+    <div id="info">Click and drag to create fluid motion</div>
+    
     <script src="./script.js"></script>
-    <script src="./controls.js"></script>
+    <script>
+        // UI Controller
+        document.addEventListener('DOMContentLoaded', () => {
+            const panel = document.getElementById('control-panel');
+            const toggleBtn = document.getElementById('toggle-panel');
+            
+            // Setup controls
+            const controls = {
+                viscosity: { element: 'viscosity', value: 'viscosity-value', config: 'VELOCITY_DISSIPATION' },
+                density: { element: 'density', value: 'density-value', config: 'DENSITY_DISSIPATION' },
+                vorticity: { element: 'vorticity', value: 'vorticity-value', config: 'CURL' },
+                pressure: { element: 'pressure', value: 'pressure-value', config: 'PRESSURE' },
+                radius: { element: 'radius', value: 'radius-value', config: 'SPLAT_RADIUS' },
+                bloom: { element: 'bloom', value: 'bloom-value', config: 'BLOOM_INTENSITY' }
+            };
+            
+            // Initialize sliders
+            Object.keys(controls).forEach(key => {
+                const { element, value, config: configKey } = controls[key];
+                const slider = document.getElementById(element);
+                const valueDisplay = document.getElementById(value);
+                
+                if (slider && valueDisplay && window.config) {
+                    // Update slider background
+                    const updateSliderBackground = () => {
+                        const percent = ((slider.value - slider.min) / (slider.max - slider.min)) * 100;
+                        slider.style.background = `linear-gradient(to right, #00d4ff ${percent}%, #333 ${percent}%)`;
+                    };
+                    
+                    slider.addEventListener('input', () => {
+                        const val = parseFloat(slider.value);
+                        valueDisplay.textContent = val.toFixed(2);
+                        if (window.config) {
+                            window.config[configKey] = val;
+                        }
+                        updateSliderBackground();
+                    });
+                    
+                    updateSliderBackground();
+                }
+            });
+            
+            // Checkbox controls
+            const shadingCheckbox = document.getElementById('shading');
+            const colorfulCheckbox = document.getElementById('colorful');
+            
+            if (shadingCheckbox && window.config) {
+                shadingCheckbox.addEventListener('change', () => {
+                    window.config.SHADING = shadingCheckbox.checked;
+                    if (typeof updateKeywords === 'function') {
+                        updateKeywords();
+                    }
+                });
+            }
+            
+            if (colorfulCheckbox && window.config) {
+                colorfulCheckbox.addEventListener('change', () => {
+                    window.config.COLORFUL = colorfulCheckbox.checked;
+                });
+            }
+            
+            // Button controls
+            const randomSplatsBtn = document.getElementById('random-splats');
+            if (randomSplatsBtn && typeof splatStack !== 'undefined') {
+                randomSplatsBtn.addEventListener('click', () => {
+                    splatStack.push(parseInt(Math.random() * 20) + 5);
+                });
+            }
+            
+            const clearBtn = document.getElementById('clear');
+            if (clearBtn && typeof splatStack !== 'undefined') {
+                clearBtn.addEventListener('click', () => {
+                    splatStack.push(0);
+                });
+            }
+            
+            // Toggle panel on mobile
+            if (toggleBtn) {
+                toggleBtn.addEventListener('click', () => {
+                    panel.classList.toggle('hidden');
+                    toggleBtn.classList.toggle('show');
+                });
+                
+                // Show toggle button when panel is hidden
+                if (window.innerWidth <= 768) {
+                    panel.classList.add('hidden');
+                    toggleBtn.classList.add('show');
+                }
+            }
+            
+            // Handle window resize
+            window.addEventListener('resize', () => {
+                if (window.innerWidth > 768) {
+                    panel.classList.remove('hidden');
+                    toggleBtn.classList.remove('show');
+                } else if (!toggleBtn.classList.contains('show')) {
+                    toggleBtn.classList.add('show');
+                }
+            });
+        });
+    </script>
 </body>
 </html>
